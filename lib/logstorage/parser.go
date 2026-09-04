@@ -2304,6 +2304,14 @@ func parseFilterPhrase(lex *lexer, fieldName string) (filter, error) {
 func parseFilterParens(lex *lexer, fieldName string) (filter, error) {
 	lex.nextToken()
 
+	multiKey, err, ok := parseMaybeMultiKey(lex, fieldName)
+	if ok {
+		if err != nil {
+			return nil, err
+		}
+		return multiKey, nil
+	}
+
 	f, err := parseFilterOr(lex, fieldName)
 	if err != nil {
 		return nil, err
@@ -2315,6 +2323,43 @@ func parseFilterParens(lex *lexer, fieldName string) (filter, error) {
 	lex.nextToken()
 
 	return f, nil
+}
+
+func parseMaybeMultiKey(lex *lexer, fieldName string) (filter, error, bool) {
+	lexState := lex.backupState()
+
+	var names []string
+	for {
+		names = append(names, lex.token)
+		lex.nextToken()
+
+		switch {
+		case lex.isKeyword(")"):
+			lex.nextToken()
+			if !lex.isKeyword(":") {
+				lex.restoreState(lexState)
+				return nil, fmt.Errorf("expected ':'"), true
+			}
+			lex.nextToken()
+
+			phrase, err := lex.nextCompoundToken()
+			if err != nil {
+				return nil, err, true
+			}
+
+			filters := []filter{}
+			for _, name := range names {
+				filters = append(filters, newFilterPhrase(name, phrase))
+			}
+
+			return newFilterOr(filters), nil, true
+		case lex.isKeyword(","):
+			lex.nextToken()
+		default:
+			lex.restoreState(lexState)
+			return nil, nil, false
+		}
+	}
 }
 
 func parseFilterNot(lex *lexer, fieldName string) (filter, error) {

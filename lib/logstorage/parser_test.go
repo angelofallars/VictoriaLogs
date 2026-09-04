@@ -169,6 +169,7 @@ func TestLexer(t *testing.T) {
 		[]string{"_stream", ":", "{", "foo", "=", "bar", ",", "a", "=~", "baz", ",", "b", "!=", "cd", ",", "d,}a", "!~", "abc", "}"})
 
 	f(`foo:~*`, []string{"foo", ":", "~", "*"})
+	f("(foo, bar):123", []string{"(", "foo", ",", "bar", ")", ":", "123"})
 }
 
 func TestQuery_AddTimeFilter(t *testing.T) {
@@ -872,13 +873,13 @@ func TestParseTimeRange(t *testing.T) {
 	f("2023-02-28T23Z", minTimestamp, maxTimestamp)
 
 	// _time:YYYY-MM-DDTHH-hh:mm
-	minTimestamp = time.Date(2023, time.February, 28, 01, 25, 0, 0, time.UTC).UnixNano()
-	maxTimestamp = time.Date(2023, time.February, 28, 02, 25, 0, 0, time.UTC).UnixNano() - 1
+	minTimestamp = time.Date(2023, time.February, 28, 0o1, 25, 0, 0, time.UTC).UnixNano()
+	maxTimestamp = time.Date(2023, time.February, 28, 0o2, 25, 0, 0, time.UTC).UnixNano() - 1
 	f("2023-02-27T23-02:25", minTimestamp, maxTimestamp)
 
 	// _time:YYYY-MM-DDTHH+hh:mm
 	minTimestamp = time.Date(2023, time.February, 28, 23, 35, 0, 0, time.UTC).UnixNano()
-	maxTimestamp = time.Date(2023, time.March, 1, 00, 35, 0, 0, time.UTC).UnixNano() - 1
+	maxTimestamp = time.Date(2023, time.March, 1, 0o0, 35, 0, 0, time.UTC).UnixNano() - 1
 	f("2023-03-01T02+02:25", minTimestamp, maxTimestamp)
 
 	// _time:YYYY-MM-DDTHH:MM
